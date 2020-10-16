@@ -1,3 +1,8 @@
+# Database
+*.db
+gtfs/
+gtfs.zip
+
 # Visual Studio Code
 .vscode/*
 !.vscode/tasks.json
