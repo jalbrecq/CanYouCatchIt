@@ -1,20 +1,28 @@
-attach mcts.db as main
-
+-- Create the agency table
 create table agency(agency_id TEXT,agency_name TEXT,agency_url TEXT,agency_timezone TEXT,agency_lang TEXT, agency_phone TEXT);
 
+-- Create the calendar dates table
 create table calendar_dates(service_id TEXT,date NUMERIC,exception_type NUMERIC);
 
+-- Create the routes table
 create table routes(route_id TEXT,agency_id TEXT,route_short_name TEXT,route_long_name TEXT,route_desc TEXT,route_type NUMERIC,route_url TEXT,route_color TEXT,route_text_color TEXT);
 
+-- Create the shapes table
 create table shapes(shape_id TEXT,shape_pt_lat REAL,shape_pt_lon REAL,shape_pt_sequence NUMERIC);
 
+-- Create the stops table
 create table stops(stop_id TEXT,stop_code TEXT,stop_name TEXT,stop_desc TEXT,stop_lat REAL,stop_lon REAL,zone_id du bled NUMERIC,stop_url TEXT,timepoint NUMERIC);
 
+-- Create the stops times table
 create table stop_times(trip_id TEXT,arrival_time TEXT,departure_time TEXT,stop_id TEXT,stop_sequence NUMERIC,stop_headsign TEXT,pickup_type NUMERIC,drop_off_type NUMERIC);
 
+-- Create the trips table
 create table trips(route_id TEXT,service_id TEXT,trip_id TEXT,trip_headsign TEXT,direction_id NUMERIC,block_id TEXT,shape_id TEXT);
 
+-- Indicate the separator (each column is separated by a comma)
 .separator ','
+
+-- Import the txt file into each table
 .import gtfs/agency.txt agency
 .import gtfs/calendar_dates.txt calendar_dates
 .import gtfs/routes.txt routes
@@ -22,6 +30,8 @@ create table trips(route_id TEXT,service_id TEXT,trip_id TEXT,trip_headsign TEXT
 .import gtfs/stops.txt stops
 .import gtfs/stop_times.txt stop_times
 .import gtfs/trips.txt trips
+
+-- Delete the unwanted data
 delete from agency where agency_id like 'agency_id';
 delete from calendar_dates where service_id like 'service_id';
 delete from routes where route_id like 'route_id';
@@ -29,5 +39,4 @@ delete from shapes where shape_id like 'shape_id';
 delete from stops where stop_id like 'stop_id';
 delete from stop_times where trip_id like 'trip_id';
 delete from trips where route_id like 'route_id';
-select * from stops where stop_id == 5505;
 
