@@ -4,9 +4,12 @@ create table agency(agency_id TEXT,agency_name TEXT,agency_url TEXT,agency_timez
 -- Create the calendar dates table
 create table calendar_dates(service_id TEXT,date NUMERIC,exception_type NUMERIC);
 
+-- Create the calendar table
+create table calendar(service_id TEXT,monday NUMERIC,tuesday NUMERIC,wednesday NUMERIC,thursday NUMERIC,friday NUMERIC,saturday NUMERIC,sunday NUMERIC,start_date NUMERIC,end_date NUMERIC);
+
 -- Create the routes table
 create table routes(route_id TEXT,agency_id TEXT,route_short_name TEXT,route_long_name TEXT,route_desc TEXT,route_type NUMERIC,route_url TEXT,route_color TEXT,route_text_color TEXT);
-
+ 
 -- Create the shapes table
 create table shapes(shape_id TEXT,shape_pt_lat REAL,shape_pt_lon REAL,shape_pt_sequence NUMERIC);
 
@@ -24,6 +27,7 @@ create table trips(route_id TEXT,service_id TEXT,trip_id TEXT,trip_headsign TEXT
 
 -- Import the txt file into each table
 .import gtfs/agency.txt agency
+.import gtfs/calendar.txt calendar
 .import gtfs/calendar_dates.txt calendar_dates
 .import gtfs/routes.txt routes
 .import gtfs/shapes.txt shapes
@@ -33,6 +37,7 @@ create table trips(route_id TEXT,service_id TEXT,trip_id TEXT,trip_headsign TEXT
 
 -- Delete the unwanted data
 delete from agency where agency_id like 'agency_id';
+delete from calendar where service_id like 'service_id';
 delete from calendar_dates where service_id like 'service_id';
 delete from routes where route_id like 'route_id';
 delete from shapes where shape_id like 'shape_id';
