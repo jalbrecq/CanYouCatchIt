@@ -162,7 +162,10 @@ def compute_delay(stops_id, database_path, access_token):
 
             if line_id not in lineId_list:
                 lineId_list.append(line_id)
-                stop_id = "{:04d}".format(int(stop['pointId'])) if stop['pointId'].isdecimal() else stop['pointId']
+                if stop['pointId'].isdecimal():
+                    stop_id = "{:04d}".format(int(stop['pointId'])) 
+                else:
+                    stop_id = stop['pointId']
 
                 if 'message' in passingTimes:
                     print(passingTimes['message'])
@@ -224,7 +227,9 @@ def save_delays(database_path):
             c = sqlite_db.cursor()
 
             for delay in delays:
-                print('delay: ', delay['delay'])
+                if not delay['stop'].isnumeric():
+                    print('-'*40 + 'UNUMERICAL STOP ID' + '-'*40)
+                print('delay: ', delay['delay'], ' -- ', 'stop id: ', delay['stop'], ' -- ', 'line id: ', delay['line'])
                 c.execute("INSERT INTO delay (transport_type, stop, line, delay, theoretical_time, expectedArrivalTime, date) VALUES (?, ?, ?, ?, ?, ?, ?)", (delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], ))
             sqlite_db.commit()
             c.close()
