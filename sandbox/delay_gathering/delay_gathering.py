@@ -1,7 +1,8 @@
 # Imports
 from requests import request
 from datetime import datetime, timedelta, date
-import sqlite3, time
+import sqlite3, time, json
+import os.path
 
 # Compute and save delays to a sqlite3 database
 
@@ -13,7 +14,7 @@ def get_stops(lines_id, access_token):
     """
 
     # The STIB API url
-    url = "https://opendata-api.stibmivb.be/NetworkDescription/1.0/PointByLine/" + "%2C".join(lines_id)
+    url = "https://opendata-api.stib-mivb.be/NetworkDescription/1.0/PointByLine/" + "%2C".join(lines_id)
 
     # Payload
     payload = {}
@@ -25,7 +26,39 @@ def get_stops(lines_id, access_token):
     }
 
     # Send the GET request
-    return(eval(request("GET", url, headers=headers, data=payload).text))
+    response = eval(request("GET", url, headers=headers, data=payload).text)
+    result = {}
+    lines_id = []
+    if 'message' not in response:
+        for line in response["lines"]:
+            if line['lineId'] not in lines_id:
+                lines_id.append(line['lineId'])
+                result[line['lineId']] = {'stops_id': []}
+                for point in line['points']:
+                    result[line['lineId']]['stops_id'].append(point['id'])
+                    result[line['lineId']]['direction'] = line['direction']
+                    result[line['lineId']]['destination'] = line['destination']['fr']
+    return result
+
+def get_stops_id(database_path):
+    """Return the STIB stop ids - list of string.
+
+    Keyword arguments:
+    database_path -- the database path (a string or an path like object - no default)
+    """
+
+    # Connect to the db
+    sqlite_db = sqlite3.connect(database_path)
+    c = sqlite_db.cursor()
+
+    # get the id of the lines
+    c.execute('SELECT stop_id FROM stops')
+    result = c.fetchall()
+    
+    # disconnect
+    c.close()
+
+    return [line_id for i in result for line_id in i]
 
 def get_arrival_time(stops_id, access_token):
     """Return the STIB PassingTimeByPoint api response.
@@ -76,7 +109,7 @@ def get_schedule(database_path, stop_id, line_id, trip_headsign):
     c = sqlite_db.cursor()
 
     # get the id of the route
-    c.execute('SELECT route_id, count(route_id) as count FROM routes WHERE agency_id=?', (line_id, ))
+    c.execute('SELECT route_id FROM routes WHERE agency_id=?', (line_id, ))
     result = c.fetchone()
     if result:
         route_id = result[0]
@@ -105,7 +138,7 @@ def get_schedule(database_path, stop_id, line_id, trip_headsign):
     else:
         return None
 
-def compute_delay(stops_id, database_path):
+def compute_delay(stops_id, database_path, access_token):
     """Return delay in second for the next vehicle of each line passing at a given stop.
 
     Keyword arguments:
@@ -115,38 +148,56 @@ def compute_delay(stops_id, database_path):
 
     result = []
 
-    for points in [stops_id[x:x+10] for x in range(0, len(stops_id), 10)]:
-        api_responce = get_arrival_time(points)
+    api_responce = get_arrival_time(stops_id, access_token)
 
-        for stop in api_responce['points']:
-            lineId_list = []
+    for stop in api_responce['points']:
+        lineId_list = []
 
-            for passingTimes in stop['passingTimes']:
-                delay = None
-                line_id = passingTimes['lineId']
+        for passingTimes in stop['passingTimes']:
+            delay = None
+            theoretical_time = None
+            expectedArrivalTime = None
 
-                if line_id not in lineId_list:
-                    lineId_list.append(line_id)
+            line_id = passingTimes['lineId']
 
-                    if 'message' in passingTimes:
-                        print(passingTimes['message'])
+            if line_id not in lineId_list:
+                lineId_list.append(line_id)
+                stop_id = "{:04d}".format(int(stop['pointId'])) if stop['pointId'].isdecimal() else stop['pointId']
 
+                if 'message' in passingTimes:
+                    print(passingTimes['message'])
+
+                else:
+                    theoretical_time = get_schedule(database_path, stop_id, line_id, passingTimes['destination']['fr'])
+
+                    if theoretical_time:
+
+                        theoretical_time = datetime.strptime(theoretical_time, '%H:%M:%S').time()
+                        expectedArrivalTime = datetime.strptime(passingTimes['expectedArrivalTime'].split('T')[1].split('+')[0], '%H:%M:%S').time()
+
+                        theoretical_time = datetime.combine(date.today(), theoretical_time)
+                        expectedArrivalTime = datetime.combine(date.today(), expectedArrivalTime)
+
+                        delay = theoretical_time - expectedArrivalTime
+                        delay = delay.total_seconds()//60
+                    
                     else:
-                        stop_id = "{:04d}".format(int(stop['pointId'])) if stop['pointId'].isdecimal() else stop['pointId']
-                        theoretical_time = get_schedule(database_path, stop_id, line_id, passingTimes['destination']['fr'])
+                        print('not theoretical time', stop_id, line_id, datetime.now())
 
-                        if theoretical_time:
+                # Connect to the db
+                sqlite_db = sqlite3.connect(database_path)
+                c = sqlite_db.cursor()
 
-                            theoretical_time = datetime.strptime(theoretical_time, '%H:%M:%S').time()
-                            expectedArrivalTime = datetime.strptime(passingTimes['expectedArrivalTime'].split('T')[1].split('+')[0], '%H:%M:%S').time()
-
-                            theoretical_time = datetime.combine(date.today(), theoretical_time)
-                            expectedArrivalTime = datetime.combine(date.today(), expectedArrivalTime)
-
-                            delay = theoretical_time - expectedArrivalTime
-                            delay = delay.total_seconds()//60
-
-                    result.append({'stop': stop_id, 'line': line_id, 'delay': delay, 'theoretical_time': theoretical_time, 'expectedArrivalTime': expectedArrivalTime, 'date': datetime.now()})
+                # get the id of the route
+                c.execute('SELECT route_desc FROM routes WHERE agency_id=?', (line_id, ))
+                response = c.fetchone()
+                if response:
+                    transport_type = response[0]
+                else:
+                    c.close()
+                    print("ERROR: there is no route_desc for this line_id: " + str(line_id))
+                c.close()
+                result.append({'transport_type': transport_type, 'stop': stop_id, 'line': line_id, 'delay': delay, 'theoretical_time': theoretical_time, 'expectedArrivalTime': expectedArrivalTime, 'date': datetime.now()})
     return result
 
 def save_delays(database_path):
@@ -160,13 +211,29 @@ def save_delays(database_path):
     # You need to secure this token be carefull it's fragile
     access_token = 'd86ffa37612eff39c64bacb96053c194'
 
-    lines_id = [] # find a way to retrieve those lines_id
-    stops_id = get_stops(lines_id, access_token) # write it to a file with a month of life time
+    stops_id = get_stops_id(database_path)
 
-    while(True):
-        compute_delay(stops_id, 'sandbox/data/mcts.db') # save this result to an sql database or an csv file # need to check why some stop have no schedule
-        time.sleep(20) # update the old delay ? add new delay ?
+    x = 0
+    while(x < 10):
+        
+        for points in [stops_id[x:x+10] for x in range(0, len(stops_id), 10)]:
+            delays = compute_delay(points, 'sandbox/data/mcts.db', access_token)
+        
+            # Connect to the db
+            sqlite_db = sqlite3.connect(database_path)
+            c = sqlite_db.cursor()
+
+            for delay in delays:
+                print('delay: ', delay['delay'])
+                c.execute("INSERT INTO delay (transport_type, stop, line, delay, theoretical_time, expectedArrivalTime, date) VALUES (?, ?, ?, ?, ?, ?, ?)", (delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], ))
+            sqlite_db.commit()
+            c.close()
+
+        print('-'*20, 'waiting 60s', '-'*20)
+        time.sleep(60) # update the old delay ? add new delay ?
+        x += 1
 
 # print(get_arrival_time(["0470F"]))
 # print(get_schedule('sandbox/data/mcts.db', '0516', '4', 'GARE DU NORD'))
-# print(compute_delay(['0089', '0022', '0470F', '0471', '0039', '0472', '0473F', '0501', '0015', '0506', '0511', '0057', '0516', '0521', '61', '0526', '0529', '0531'], 'sandbox/data/mcts.db'))
+# print(compute_delay(['0089', '0022', '0470F', '0471', '0039', '0472', '0473F', '0501', '0015', '0506', '0511', '0057', '0516', '0521', '61', '0526', '0529', '0531'], 'sandbox/data/mcts.db', 'd86ffa37612eff39c64bacb96053c194'))
+print(save_delays('sandbox/data/mcts.db'))
