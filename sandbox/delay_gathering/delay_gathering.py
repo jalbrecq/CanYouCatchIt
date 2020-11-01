@@ -1,7 +1,7 @@
 # Imports
 from requests import request
 from datetime import datetime, timedelta, date
-import sqlite3, time, json, csv
+import sqlite3, time, json, csv, difflib
 import os.path
 from pathlib import Path
 
@@ -120,10 +120,10 @@ def get_schedule(database_path, stop_id, line_id, trip_headsign):
         return "ERROR"
 
     # get the service_id
-    c.execute('SELECT trips.service_id FROM calendar, trips WHERE calendar.' + name_day + '=1 AND calendar.start_date<=? AND calendar.end_date>=? AND trips.route_id=? AND calendar.service_id=trips.service_id', (today, today, route_id, ))
-    result = c.fetchone()
+    c.execute('SELECT DISTINCT trips.service_id FROM calendar, trips WHERE calendar.' + name_day + '=1 AND calendar.start_date<=? AND calendar.end_date>=? AND trips.route_id=? AND calendar.service_id=trips.service_id', (today, today, route_id, ))
+    result = c.fetchall()
     if result:
-        service_id = result[0]
+        services_id = result
     else:
         c.close()
         print("ERROR: there is no service_id for this route_id: " + str(route_id))
@@ -131,8 +131,16 @@ def get_schedule(database_path, stop_id, line_id, trip_headsign):
 
     # get the theoretical schedule
     # --- NEED OPTIMISATION ---
-    c.execute('SELECT DISTINCT stop_times.trip_id, stop_times.arrival_time FROM stop_times, trips WHERE trips.route_id=? AND trips.trip_headsign=? AND trips.service_id=? AND stop_times.stop_id=? AND stop_times.arrival_time>=? AND stop_times.arrival_time<=? AND stop_times.trip_id=trips.trip_id ORDER BY stop_times.arrival_time ASC', (route_id, trip_headsign, service_id, stop_id, current_time, max_time, ))
-    theoretical_time = c.fetchall()
+    theoretical_time = []
+    if services_id:
+        for service_id in services_id:
+            # print(route_id, trip_headsign, service_id[0], stop_id, current_time, max_time)
+            if not theoretical_time:
+                # print(route_id, trip_headsign, service_id[0], stop_id, current_time, max_time)
+                c.execute('SELECT DISTINCT stop_times.trip_id, stop_times.arrival_time FROM stop_times, trips WHERE trips.route_id=? AND trips.trip_headsign=? AND trips.service_id=? AND stop_times.stop_id=? AND stop_times.arrival_time>=? AND stop_times.arrival_time<=? AND stop_times.trip_id=trips.trip_id ORDER BY stop_times.arrival_time ASC', (route_id, trip_headsign, service_id[0], stop_id, current_time, max_time, ))
+                theoretical_time = c.fetchall()
+            else:
+                break
     c.close()
     if theoretical_time:
         return theoretical_time[0]
@@ -143,7 +151,7 @@ def compute_delay(stops_id, database_path, access_token):
     """Return delay in second for the next vehicle of each line passing at a given stop.
 
     Keyword arguments:
-    stop_id -- the id of a stop (a list of strings - no default)
+    stops_id -- a list of stop id (a list of strings - no default)
     database_path -- the database path (a string or an path like object - no default)
     """
 
@@ -159,15 +167,18 @@ def compute_delay(stops_id, database_path, access_token):
             theoretical_time = None
             expectedArrivalTime = None
             direction = None
+            trip_id = None
 
             line_id = passingTimes['lineId']
 
             if line_id not in lineId_list:
                 lineId_list.append(line_id)
+
                 if stop['pointId'].isdecimal():
                     stop_id = "{:04d}".format(int(stop['pointId'])) 
                 else:
                     stop_id = stop['pointId']
+                stop_id = difflib.get_close_matches(stop_id, stops_id)[0]
 
                 if 'message' in passingTimes:
                     print(passingTimes['message'])
@@ -217,7 +228,7 @@ def compute_delay(stops_id, database_path, access_token):
                     c.close()
                     print("ERROR: there is no route_desc for this line_id: " + str(line_id))
                 c.close()
-                result.append({'transport_type': transport_type, 'stop': stop_id, 'line': line_id, 'delay': delay, 'theoretical_time': theoretical_time, 'expectedArrivalTime': expectedArrivalTime, 'date': datetime.now(), 'direction': direction})
+                result.append({'transport_type': transport_type, 'trip': trip_id, 'stop': stop_id, 'line': line_id, 'delay': delay, 'theoretical_time': theoretical_time, 'expectedArrivalTime': expectedArrivalTime, 'date': datetime.now(), 'direction': direction})
     return result
 
 def save_delays(stops_id, database_path):
@@ -242,8 +253,8 @@ def save_delays(stops_id, database_path):
             c = sqlite_db.cursor()
 
             for delay in delays:
-                if not delay['stop'].isnumeric():
-                    print('-'*40 + 'UNUMERICAL STOP ID' + '-'*40)
+                # if not delay['stop'].isnumeric():
+                #     print('-'*40 + 'UNUMERICAL STOP ID' + '-'*40)
                 print('delay: ', delay['delay'], ' -- ', 'stop id: ', delay['stop'], ' -- ', 'line id: ', delay['line'])
 
                 url = "http://api.openweathermap.org/data/2.5/weather?q=Brussels,be&APPID=" + weather_api_token
@@ -255,14 +266,17 @@ def save_delays(stops_id, database_path):
                 visibility = response.json()['visibility']
                 wind = response.json()['wind']['speed']
                 rain = 0
-                if 'rain' in response.json():
-                    rain = response.json()['rain']
-                c.execute("INSERT INTO delay (transport_type, stop, line, delay, theoretical_time, expectedArrivalTime, date, direction, year, month, day, hour, minute, temp, humidity, visibility, wind, rain) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain))
+                if 'rain' in response.json() and '1h' in response.json()['rain']:
+                    rain = response.json()['rain']['1h']
+                
+                # print(delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain)
 
                 f = open('sandbox/data/delay' + datetime.now().date().isoformat() + '.csv', 'a+')
                 with f:
                     writer = csv.writer(f)
-                    writer.writerow((delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain))
+                    writer.writerow((delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, delay['date'].second, temp, humidity, visibility, wind, rain))
+
+                c.execute("INSERT INTO delay (transport_type, trip, stop, line, delay, theoretical_time, expectedArrivalTime, date, direction, year, month, day, hour, minute, temp, humidity, visibility, wind, rain) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (delay['transport_type'], delay['trip'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain))
 
             sqlite_db.commit()
             c.close()
@@ -273,5 +287,5 @@ def save_delays(stops_id, database_path):
 # print(get_arrival_time(["0470F"]))
 # print(get_schedule('sandbox/data/mcts.db', '0516', '4', 'GARE DU NORD'))
 # print(compute_delay(['0089', '0022', '0470F', '0471', '0039', '0472', '0473F', '0501', '0015', '0506', '0511', '0057', '0516', '0521', '61', '0526', '0529', '0531'], 'sandbox/data/mcts.db', 'Place_your_acces_token_here'))
-# print(save_delays(get_stops_id(database_path), 'sandbox/data/mcts.db'))
-print(save_delays(['0089'], 'sandbox/data/mcts.db'))
+# print(save_delays(get_stops_id('sandbox/data/mcts.db'), 'sandbox/data/mcts.db'))
+print(save_delays(get_stops_id('sandbox/data/mcts.db'), 'sandbox/data/mcts.db'))
