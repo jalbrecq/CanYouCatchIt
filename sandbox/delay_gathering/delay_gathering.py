@@ -254,16 +254,15 @@ def save_delays(stops_id, database_path):
                 humidity = response.json()['main']['humidity']
                 visibility = response.json()['visibility']
                 wind = response.json()['wind']['speed']
-                rain = None
+                rain = 0
                 if 'rain' in response.json():
                     rain = response.json()['rain']
+                c.execute("INSERT INTO delay (transport_type, stop, line, delay, theoretical_time, expectedArrivalTime, date, direction, year, month, day, hour, minute, temp, humidity, visibility, wind, rain) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain))
 
-                c.execute("INSERT INTO delay (transport_type, stop, line, delay, theoretical_time, expectedArrivalTime, date, direction, year, month, day, hour, minute, temp, humidity, visibility, wind, rain) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], temp, humidity, visibility, wind, rain))
-
-                f = open('sandbox/data/delay' + datetime.now() + '.csv', 'w')
+                f = open('sandbox/data/delay' + datetime.now().date().isoformat() + '.csv', 'a+')
                 with f:
                     writer = csv.writer(f)
-                    writer.writerow(delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], temp, humidity, visibility, wind, rain)
+                    writer.writerow((delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain))
 
             sqlite_db.commit()
             c.close()
