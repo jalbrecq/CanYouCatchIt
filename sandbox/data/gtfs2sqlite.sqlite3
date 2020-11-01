@@ -22,6 +22,9 @@ create table stop_times(trip_id TEXT,arrival_time TEXT,departure_time TEXT,stop_
 -- Create the trips table
 create table trips(route_id TEXT,service_id TEXT,trip_id TEXT,trip_headsign TEXT,direction_id NUMERIC,block_id TEXT,shape_id TEXT);
 
+-- Create the delay table
+create table delay(transport_type TEXT, stop TEXT, line TEXT, delay TEXT, theoretical_time TEXT, expectedArrivalTime TEXT, date TEXT, direction TEXT, year TEXT, month TEXT, day TEXT, hour TEXT, minute TEXT, temp TEXT, humidity TEXT, visibility TEXT, wind TEXT, rain TEXT);
+
 -- Indicate the separator (each column is separated by a comma)
 .separator ','
 
