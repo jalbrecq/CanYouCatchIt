@@ -1,7 +1,9 @@
 import requests, sqlite3
 from datetime import date, datetime, timedelta
+from config import weather_api_token
+from config import access_token
 
-def is_delay(stop_id):
+def is_delay(stop_id, access_token):
     formated_stop_id = "{:04d}".format(stop_id)
 
     # The STIB API url
@@ -11,10 +13,6 @@ def is_delay(stop_id):
     payload = {}
 
     # Headers
-    # You need to secure this token be carefull it's fragile
-    access_token = 'd86ffa37612eff39c64bacb96053c194'
-
-    # Setup the headers
     headers = {
     'Authorization': 'Bearer ' + access_token,
     'Cookie': 'f5avraaaaaaaaaaaaaaaa_session_=OEEDFHADHAIPEDCPACGJLMHJJHFCELBIFFONKBJEDPDLCCOBLCPONHDHNEIJOKPPCGMDMAGEOMALHLHIHJAAAPLKCGFPGILCLCEFENJHMMCPOAADADGOKJFHONBMHBKE; TS010ea478=0136df15ed8891ae979df14d59421064adc5f7e78b2404e3b7caf5821294aa2c57d1d2895669a6cd21601587f50dccb5d83071c806cc8031eb583a663cc797365ea3a8aa2b'
@@ -86,4 +84,4 @@ def is_delay(stop_id):
             print('-'*20)
             passingTimes_nb += 1
 
-is_delay(516)
+is_delay(516, access_token)

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, date
 import sqlite3, time, json, csv, difflib
 import os.path
 from pathlib import Path
+from config import access_token, weather_api_token
 
 # Compute and save delays to a sqlite3 database
 
@@ -117,7 +118,7 @@ def get_schedule(database_path, stop_id, line_id, trip_headsign):
     else:
         c.close()
         print("ERROR: there is no route_id for this line_id: " + str(line_id))
-        return "ERROR"
+        return None
 
     # get the service_id
     c.execute('SELECT DISTINCT trips.service_id FROM calendar, trips WHERE calendar.' + name_day + '=1 AND calendar.start_date<=? AND calendar.end_date>=? AND trips.route_id=? AND calendar.service_id=trips.service_id', (today, today, route_id, ))
@@ -127,7 +128,7 @@ def get_schedule(database_path, stop_id, line_id, trip_headsign):
     else:
         c.close()
         print("ERROR: there is no service_id for this route_id: " + str(route_id))
-        return "ERROR"
+        return None
 
     # get the theoretical schedule
     # --- NEED OPTIMISATION ---
@@ -185,6 +186,7 @@ def compute_delay(stops_id, database_path, access_token):
 
                 else:
                     theoretical_time = get_schedule(database_path, stop_id, line_id, passingTimes['destination']['fr'])
+                    print(theoretical_time)
 
                     if theoretical_time:
 
@@ -231,17 +233,13 @@ def compute_delay(stops_id, database_path, access_token):
                 result.append({'transport_type': transport_type, 'trip': trip_id, 'stop': stop_id, 'line': line_id, 'delay': delay, 'theoretical_time': theoretical_time, 'expectedArrivalTime': expectedArrivalTime, 'date': datetime.now(), 'direction': direction})
     return result
 
-def save_delays(stops_id, database_path):
+def save_delays(stops_id, database_path, access_token, weather_api_token):
     """Return delay in second for the next vehicle of each line passing at a given stop.
 
     Keyword arguments:
     stop_id -- the id of a stop (a list of strings - no default)
     database_path -- the database path (a string or an path like object - no default)
     """
-
-    # You need to secure this token be carefull it's fragile
-    access_token = 'd86ffa37612eff39c64bacb96053c194'
-    weather_api_token = 'e98872d0940b9785a1e048d5a5a599dd'
 
     while(True):
         
@@ -287,5 +285,5 @@ def save_delays(stops_id, database_path):
 # print(get_arrival_time(["0470F"]))
 # print(get_schedule('sandbox/data/mcts.db', '0516', '4', 'GARE DU NORD'))
 # print(compute_delay(['0089', '0022', '0470F', '0471', '0039', '0472', '0473F', '0501', '0015', '0506', '0511', '0057', '0516', '0521', '61', '0526', '0529', '0531'], 'sandbox/data/mcts.db', 'd86ffa37612eff39c64bacb96053c194'))
-# print(save_delays(get_stops_id('sandbox/data/mcts.db'), 'sandbox/data/mcts.db'))
-print(save_delays(get_stops_id('sandbox/data/mcts.db'), 'sandbox/data/mcts.db'))
+# print(save_delays(get_stops_id('sandbox/data/mcts.db'), 'sandbox/data/mcts.db', access_token, weather_api_token))
+print(save_delays(['0089'], 'sandbox/data/mcts.db', access_token, weather_api_token))
