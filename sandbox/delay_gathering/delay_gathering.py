@@ -1,5 +1,5 @@
 # Imports
-from requests import request
+import requests
 from datetime import datetime, timedelta, date
 import sqlite3, time, json, csv, difflib
 import os.path
@@ -27,9 +27,13 @@ def get_stops(lines_id, access_token):
         'Authorization': 'Bearer ' + access_token,
     }
 
-    # Send the GET request
-    response = eval(request("GET", url, headers=headers, data=payload).text)
     result = {}
+
+    # Send the GET request
+    try:
+        response = eval(requests.request("GET", url, headers=headers, data=payload).text)
+    except requests.exceptions.ConnectionError:
+        return result
     lines_id = []
     if 'message' not in response:
         for line in response["lines"]:
@@ -82,7 +86,10 @@ def get_arrival_time(stops_id, access_token):
     }
 
     # Send the GET request
-    return(eval(request("GET", url, headers=headers, data=payload).text))
+    try:
+        return eval(requests.request("GET", url, headers=headers, data=payload).text)
+    except requests.exceptions.ConnectionError:
+        return None
 
 def get_schedule(database_path, stop_id, line_id, trip_headsign):
     """Return the STIB theoretical schedule - list of datetime (%H:%M:%S).
@@ -159,6 +166,17 @@ def compute_delay(stops_id, database_path, access_token):
     result = []
 
     api_responce = get_arrival_time(stops_id, access_token)
+
+    if not api_responce:
+        transport_type = None
+        stop_id = None
+        line_id = None
+        delay = None
+        theoretical_time = None
+        expectedArrivalTime = None
+        direction = None
+        trip_id = None
+        return [{'transport_type': transport_type, 'trip': trip_id, 'stop': stop_id, 'line': line_id, 'delay': delay, 'theoretical_time': theoretical_time, 'expectedArrivalTime': expectedArrivalTime, 'date': datetime.now(), 'direction': direction}]
 
     for stop in api_responce['points']:
         lineId_list = []
@@ -256,16 +274,25 @@ def save_delays(stops_id, database_path, access_token, weather_api_token):
                 print('delay: ', delay['delay'], ' -- ', 'stop id: ', delay['stop'], ' -- ', 'line id: ', delay['line'])
 
                 url = "http://api.openweathermap.org/data/2.5/weather?q=Brussels,be&APPID=" + weather_api_token
+                
+                try:
+                    response = requests.request("GET", url, headers={}, data={})
+                except requests.exceptions.ConnectionError:
+                    response = None
 
-                response = request("GET", url, headers={}, data={})
-
-                temp = response.json()['main']['temp']
-                humidity = response.json()['main']['humidity']
-                visibility = response.json()['visibility']
-                wind = response.json()['wind']['speed']
-                rain = 0
-                if 'rain' in response.json() and '1h' in response.json()['rain']:
-                    rain = response.json()['rain']['1h']
+                temp = None
+                humidity = None
+                visibility = None
+                wind = None
+                rain = None
+                if response:
+                    temp = response.json()['main']['temp']
+                    humidity = response.json()['main']['humidity']
+                    visibility = response.json()['visibility']
+                    wind = response.json()['wind']['speed']
+                    rain = 0
+                    if 'rain' in response.json() and '1h' in response.json()['rain']:
+                        rain = response.json()['rain']['1h']
                 
                 # print(delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain)
 
@@ -282,8 +309,11 @@ def save_delays(stops_id, database_path, access_token, weather_api_token):
         print('-'*40, 'waiting 60s', '-'*40)
         time.sleep(60)
 
-# print(get_arrival_time(["0470F"]))
+
+
+# print(get_stops(['16'], access_token))
+# print(get_arrival_time(["0470F"], access_token))
 # print(get_schedule('sandbox/data/mcts.db', '0516', '4', 'GARE DU NORD'))
 # print(compute_delay(['0089', '0022', '0470F', '0471', '0039', '0472', '0473F', '0501', '0015', '0506', '0511', '0057', '0516', '0521', '61', '0526', '0529', '0531'], 'sandbox/data/mcts.db', 'd86ffa37612eff39c64bacb96053c194'))
 # print(save_delays(get_stops_id('sandbox/data/mcts.db'), 'sandbox/data/mcts.db', access_token, weather_api_token))
-print(save_delays(['0089'], 'sandbox/data/mcts.db', access_token, weather_api_token))
+# print(save_delays(['0089'], 'sandbox/data/mcts.db', access_token, weather_api_token))
