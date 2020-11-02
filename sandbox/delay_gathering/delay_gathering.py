@@ -1,12 +1,22 @@
 # Imports
-import requests
 from datetime import datetime, timedelta, date
-import sqlite3, time, json, csv, difflib
+import sqlite3, time, json, csv, difflib, requests, logging
+from logging.handlers import RotatingFileHandler
 import os.path
 from pathlib import Path
-from config import access_token, weather_api_token
+from config import access_token, weather_api_token, level
 
-# Compute and save delays to a sqlite3 database
+log_formatter = logging.Formatter('%(asctime)s %(levelname)s %(funcName)s(%(lineno)d) %(message)s')
+
+my_handler = RotatingFileHandler('sandbox/log/delay_gathering.log', mode='a', maxBytes=5*1024*1024, 
+                                 backupCount=2, encoding=None, delay=0)
+my_handler.setFormatter(log_formatter)
+my_handler.setLevel(level)
+
+app_log = logging.getLogger('root')
+app_log.setLevel(level)
+
+app_log.addHandler(my_handler)
 
 def get_stops(lines_id, access_token):
     """Return the STIB PassingTimeByPoint api response.
@@ -30,9 +40,11 @@ def get_stops(lines_id, access_token):
     result = {}
 
     # Send the GET request
+    app_log.info('Send a request to the STIB API to get the list of stops on a given line')
     try:
         response = eval(requests.request("GET", url, headers=headers, data=payload).text)
     except requests.exceptions.ConnectionError:
+        app_log.exception('Connection Error probably a lost of internet connection')
         return result
     lines_id = []
     if 'message' not in response:
@@ -53,6 +65,7 @@ def get_stops_id(database_path):
     database_path -- the database path (a string or an path like object - no default)
     """
 
+    app_log.info('fetch the list of all STIB stops')
     # Connect to the db
     sqlite_db = sqlite3.connect(database_path)
     c = sqlite_db.cursor()
@@ -60,7 +73,7 @@ def get_stops_id(database_path):
     # get the id of the lines
     c.execute('SELECT stop_id FROM stops')
     result = c.fetchall()
-    
+
     # disconnect
     c.close()
 
@@ -86,9 +99,11 @@ def get_arrival_time(stops_id, access_token):
     }
 
     # Send the GET request
+    app_log.info('Send a request to the STIB API to get the passing time of vehicle by point')
     try:
         return eval(requests.request("GET", url, headers=headers, data=payload).text)
     except requests.exceptions.ConnectionError:
+        app_log.exception('Connection Error probably a lost of internet connection')
         return None
 
 def get_schedule(database_path, stop_id, line_id, trip_headsign):
@@ -102,6 +117,7 @@ def get_schedule(database_path, stop_id, line_id, trip_headsign):
     """
 
     # get the current date and time
+    app_log.info('get the current date and time and max time')
     current_datetime = datetime.now()
     today = current_datetime.strftime("%Y%m%d")
     current_time = current_datetime.strftime("%H:%M:%S")
@@ -110,6 +126,7 @@ def get_schedule(database_path, stop_id, line_id, trip_headsign):
     max_time = current_datetime + timedelta(hours=1)
     max_time = max_time.strftime("%H:%M:%S")
 
+    app_log.info('get current day name')
     # get the day name
     name_day = current_datetime.strftime("%A").lower()
 
@@ -118,41 +135,45 @@ def get_schedule(database_path, stop_id, line_id, trip_headsign):
     c = sqlite_db.cursor()
 
     # get the id of the route
+    app_log.info('make a query to gather the route_id')
     c.execute('SELECT route_id FROM routes WHERE agency_id=?', (line_id, ))
     result = c.fetchone()
     if result:
         route_id = result[0]
     else:
         c.close()
-        print("ERROR: there is no route_id for this line_id: " + str(line_id))
+        app_log.error('there is no route_id for this line_id: %s', line_id)
         return None
 
     # get the service_id
+    app_log.info('make a query to gather the service_id of a route_id')
     c.execute('SELECT DISTINCT trips.service_id FROM calendar, trips WHERE calendar.' + name_day + '=1 AND calendar.start_date<=? AND calendar.end_date>=? AND trips.route_id=? AND calendar.service_id=trips.service_id', (today, today, route_id, ))
     result = c.fetchall()
     if result:
         services_id = result
     else:
         c.close()
-        print("ERROR: there is no service_id for this route_id: " + str(route_id))
+        app_log.error('there is no service_id for this route_id: %s', route_id)
         return None
 
     # get the theoretical schedule
     # --- NEED OPTIMISATION ---
+    app_log.info('make a query to get the theoritical schedule')
     theoretical_time = []
     if services_id:
         for service_id in services_id:
-            # print(route_id, trip_headsign, service_id[0], stop_id, current_time, max_time)
             if not theoretical_time:
-                # print(route_id, trip_headsign, service_id[0], stop_id, current_time, max_time)
+                app_log.info('route_id: %s, trip_headsign: %s, service_id: %s, stop_id: %s, current_time: %s, max_time: %s', route_id, trip_headsign, service_id[0], stop_id, current_time, max_time)
                 c.execute('SELECT DISTINCT stop_times.trip_id, stop_times.arrival_time FROM stop_times, trips WHERE trips.route_id=? AND trips.trip_headsign=? AND trips.service_id=? AND stop_times.stop_id=? AND stop_times.arrival_time>=? AND stop_times.arrival_time<=? AND stop_times.trip_id=trips.trip_id ORDER BY stop_times.arrival_time ASC', (route_id, trip_headsign, service_id[0], stop_id, current_time, max_time, ))
                 theoretical_time = c.fetchall()
             else:
+                app_log.info('theoretical_time find')
                 break
     c.close()
     if theoretical_time:
         return theoretical_time[0]
     else:
+        app_log.warning('no theoretical_time find')
         return None
 
 def compute_delay(stops_id, database_path, access_token):
@@ -168,6 +189,7 @@ def compute_delay(stops_id, database_path, access_token):
     api_responce = get_arrival_time(stops_id, access_token)
 
     if not api_responce:
+        app_log.warning('no arrival time response from the STIB API')
         transport_type = None
         stop_id = None
         line_id = None
@@ -228,11 +250,11 @@ def compute_delay(stops_id, database_path, access_token):
                         if direction:
                             direction = direction[0]
                         else:
-                            print("ERROR: there is no direction_id for this trip_id: " + str(trip_id))
+                            app_log.error('there is no direction_id for this trip_id: %s', trip_id)
                         c.close()
-                    
+
                     else:
-                        print('not theoretical time', stop_id, line_id, datetime.now())
+                        app_log.warning('not theoretical time: %s, %s', stop_id, line_id)
 
                 # Connect to the db
                 sqlite_db = sqlite3.connect(database_path)
@@ -246,7 +268,7 @@ def compute_delay(stops_id, database_path, access_token):
                     transport_type = response_1[0]
                 else:
                     c.close()
-                    print("ERROR: there is no route_desc for this line_id: " + str(line_id))
+                    app_log.error('there is no route_desc for this line_id: %s', line_id)
                 c.close()
                 result.append({'transport_type': transport_type, 'trip': trip_id, 'stop': stop_id, 'line': line_id, 'delay': delay, 'theoretical_time': theoretical_time, 'expectedArrivalTime': expectedArrivalTime, 'date': datetime.now(), 'direction': direction})
     return result
@@ -271,7 +293,8 @@ def save_delays(stops_id, database_path, access_token, weather_api_token):
             for delay in delays:
                 # if not delay['stop'].isnumeric():
                 #     print('-'*40 + 'UNUMERICAL STOP ID' + '-'*40)
-                print('delay: ', delay['delay'], ' -- ', 'stop id: ', delay['stop'], ' -- ', 'line id: ', delay['line'])
+                app_log.info('%s min of delay for the line (%s) on the stop (%s)', delay['delay'], delay['line'], delay['stop'])
+                print('delay:', delay['delay'], ' -- line_id:', delay['line'], ' -- stop_id:', delay['stop'])
 
                 url = "http://api.openweathermap.org/data/2.5/weather?q=Brussels,be&APPID=" + weather_api_token
                 
@@ -293,8 +316,6 @@ def save_delays(stops_id, database_path, access_token, weather_api_token):
                     rain = 0
                     if 'rain' in response.json() and '1h' in response.json()['rain']:
                         rain = response.json()['rain']['1h']
-                
-                # print(delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain)
 
                 f = open('sandbox/data/delay' + datetime.now().date().isoformat() + '.csv', 'a+')
                 with f:
@@ -307,6 +328,7 @@ def save_delays(stops_id, database_path, access_token, weather_api_token):
             c.close()
 
         print('-'*40, 'waiting 60s', '-'*40)
+        app_log.info('wainting 60s')
         time.sleep(60)
 
 
@@ -316,4 +338,4 @@ def save_delays(stops_id, database_path, access_token, weather_api_token):
 # print(get_schedule('sandbox/data/mcts.db', '0516', '4', 'GARE DU NORD'))
 # print(compute_delay(['0089', '0022', '0470F', '0471', '0039', '0472', '0473F', '0501', '0015', '0506', '0511', '0057', '0516', '0521', '61', '0526', '0529', '0531'], 'sandbox/data/mcts.db', 'd86ffa37612eff39c64bacb96053c194'))
 # print(save_delays(get_stops_id('sandbox/data/mcts.db'), 'sandbox/data/mcts.db', access_token, weather_api_token))
-# print(save_delays(['0089'], 'sandbox/data/mcts.db', access_token, weather_api_token))
+print(save_delays(['0089'], 'sandbox/data/mcts.db', access_token, weather_api_token))
