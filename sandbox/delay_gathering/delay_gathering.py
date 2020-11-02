@@ -284,6 +284,6 @@ def save_delays(stops_id, database_path, access_token, weather_api_token):
 
 # print(get_arrival_time(["0470F"]))
 # print(get_schedule('sandbox/data/mcts.db', '0516', '4', 'GARE DU NORD'))
-# print(compute_delay(['0089', '0022', '0470F', '0471', '0039', '0472', '0473F', '0501', '0015', '0506', '0511', '0057', '0516', '0521', '61', '0526', '0529', '0531'], 'sandbox/data/mcts.db', 'Place_your_acces_token_here'))
+# print(compute_delay(['0089', '0022', '0470F', '0471', '0039', '0472', '0473F', '0501', '0015', '0506', '0511', '0057', '0516', '0521', '61', '0526', '0529', '0531'], 'sandbox/data/mcts.db', 'd86ffa37612eff39c64bacb96053c194'))
 # print(save_delays(get_stops_id('sandbox/data/mcts.db'), 'sandbox/data/mcts.db', access_token, weather_api_token))
 print(save_delays(['0089'], 'sandbox/data/mcts.db', access_token, weather_api_token))
