@@ -1,5 +1,6 @@
 # importing requests
 import requests
+from config import access_token
 
 # The STIB API url
 url = "https://opendata-api.stib-mivb.be/OperationMonitoring/4.0/VehiclePositionByLine/1"
