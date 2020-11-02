@@ -1,10 +1,14 @@
 # Config
 config.py
 
+# Log
+log/
+
 # Database
 *.db
 gtfs/
 gtfs.zip
+.csv
 
 # Visual Studio Code
 .vscode/*
