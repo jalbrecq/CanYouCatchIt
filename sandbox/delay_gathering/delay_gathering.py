@@ -301,6 +301,7 @@ def save_delays(stops_id, database_path, access_token, weather_api_token):
                 try:
                     response = requests.request("GET", url, headers={}, data={})
                 except requests.exceptions.ConnectionError:
+                    app_log.exception('Connection Error probably a lost of internet connection')
                     response = None
 
                 temp = None
@@ -309,18 +310,26 @@ def save_delays(stops_id, database_path, access_token, weather_api_token):
                 wind = None
                 rain = None
                 if response:
-                    temp = response.json()['main']['temp']
-                    humidity = response.json()['main']['humidity']
-                    visibility = response.json()['visibility']
-                    wind = response.json()['wind']['speed']
-                    rain = 0
-                    if 'rain' in response.json() and '1h' in response.json()['rain']:
-                        rain = response.json()['rain']['1h']
+                    try:
+                        temp = response.json()['main']['temp']
+                        humidity = response.json()['main']['humidity']
+                        visibility = response.json()['visibility']
+                        wind = response.json()['wind']['speed']
+                        rain = 0
+                        if 'rain' in response.json() and '1h' in response.json()['rain']:
+                            rain = response.json()['rain']['1h']
+                    except:
+                        app_log.exception('Parsing to dict exception: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)')
 
+                csv_file = Path("sandbox/data/csv/delay" + datetime.now().date().isoformat() + '.csv')
                 f = open('sandbox/data/csv/delay' + datetime.now().date().isoformat() + '.csv', 'a+')
+
                 with f:
                     writer = csv.writer(f)
-                    writer.writerow((delay['transport_type'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, delay['date'].second, temp, humidity, visibility, wind, rain))
+                    if not csv_file.is_file():
+                        # file exists
+                        writer.writerow('transport_type','trip','stop','line','delay','theoretical_time','expectedArrivalTime','date','direction','year','month','day','hour','minute','temp','humidity','visibility','wind','rain')
+                    writer.writerow((delay['transport_type'], delay['trip'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain))
 
                 c.execute("INSERT INTO delay (transport_type, trip, stop, line, delay, theoretical_time, expectedArrivalTime, date, direction, year, month, day, hour, minute, temp, humidity, visibility, wind, rain) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (delay['transport_type'], delay['trip'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain))
 
