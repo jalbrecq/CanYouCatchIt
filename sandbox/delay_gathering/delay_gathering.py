@@ -328,8 +328,8 @@ def save_delays(stops_id, database_path, access_token, weather_api_token):
                     writer = csv.writer(f)
                     if not csv_file.is_file():
                         # file exists
-                        writer.writerow('transport_type','trip','stop','line','delay','theoretical_time','expectedArrivalTime','date','direction','year','month','day','hour','minute','temp','humidity','visibility','wind','rain')
-                    writer.writerow((delay['transport_type'], delay['trip'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain))
+                        writer.writerow('transport_type','trip','stop','line','delay','theoretical_time','expectedArrivalTime','date','direction','year','month','day','hour','minute', 'seconds','temp','humidity','visibility','wind','rain')
+                    writer.writerow((delay['transport_type'], delay['trip'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, delay['date'].seconds, temp, humidity, visibility, wind, rain))
 
                 c.execute("INSERT INTO delay (transport_type, trip, stop, line, delay, theoretical_time, expectedArrivalTime, date, direction, year, month, day, hour, minute, temp, humidity, visibility, wind, rain) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (delay['transport_type'], delay['trip'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain))
 
