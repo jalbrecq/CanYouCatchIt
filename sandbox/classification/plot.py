@@ -18,7 +18,7 @@ for file in files:
 	f= open(path,'rt')
 	with f:
 		data= csv.reader(f)
-
+		next(data) #skip the header 
 		for row in data:
 			if len(row[3]) >0:
 				delay= float(row[3]) 			
