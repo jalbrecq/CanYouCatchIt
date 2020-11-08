@@ -11,4 +11,7 @@ for f in all_files:
     all_df.append(df)
     
 merged_df = pd.concat(all_df, ignore_index=True, sort=False)
+
+merged_df=merged_df.drop(merged_df[merged_df.delay.isna()].index)
+
 merged_df.to_csv('../data/csv/merged.csv',index=False)
