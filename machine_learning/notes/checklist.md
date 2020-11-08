@@ -30,27 +30,27 @@ This checklist guide me through this Machine Learning projects.
 - ~~Convert the data to a format you can easily manipulate (without changing the data itself).~~
 - ~~Ensure sensitive information is deleted or protected (e.g., anonymized).~~
 - ~~Check the size and type of data (time series, sample, geographical, etc.).~~
-- Sample a test set, put it aside, and never look at it (no data snooping!).
+- ~~Sample a test set, put it aside, and never look at it (no data snooping!).~~
 
 ## Explore the Data
 Note: try to get insights from a field expert for these steps.
 
-- Create a copy of the data for exploration (sampling it down to a manageable size if necessary).
-- Create a Jupyter notebook to keep a record of your data exploration.
-- Study each attribute and its characteristics:
+- ~~Create a copy of the data for exploration (sampling it down to a manageable size if necessary).~~
+- ~~Create a Jupyter notebook to keep a record of your data exploration.~~
+- ~~Study each attribute and its characteristics:~~
     - Name
     - Type (categorical, int/float, bounded/unbounded, text, structured, etc.)
     - % of missing values
     - Noisiness and type of noise (stochastic, outliers, rounding errors, etc.)
     - Possibly useful for the task?
     - Type of distribution (Gaussian, uniform, logarithmic, etc.)
-- For supervised learning tasks, identify the target attribute(s).
-- Visualize the data.
-- Study the correlations between attributes.
-- Study how you would solve the problem manually.
-- Identify the promising transformations you may want to apply.
-- Identify extra data that would be useful (go back to “Get the Data” on page 498).
-- Document what you have learned.
+- ~~For supervised learning tasks, identify the target attribute(s).~~
+- ~~Visualize the data.~~
+- ~~Study the correlations between attributes.~~
+- ~~Study how you would solve the problem manually.~~
+- ~~Identify the promising transformations you may want to apply.~~
+- ~~Identify extra data that would be useful (go back to “Get the Data” on page 498).~~
+- ~~Document what you have learned.~~
 
 ## Prepare the Data
 - Notes:
