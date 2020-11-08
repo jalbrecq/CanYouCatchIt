@@ -47,19 +47,19 @@ path_test = dir_name + csv_test
 df_train = pd.read_csv(path_train,1,",")
 df_test = pd.read_csv(path_test,1,",")
 
-#on split notre target (salary) et nos critères qui vont servir à la prédiction
-X = df_train.drop(["stop","theoretical_time","expectedArrivalTime","date","delay"],axis='columns')
+#on split notre target (delay) et nos critères qui vont servir à la prédiction et on drop les tables inutiles
+X = df_train.drop(["stop","theoretical_time","expectedArrivalTime","date","delay","line","date_year","date_month"],axis='columns')
 Y = df_train["delay"]
-W = df_test.drop(["stop","theoretical_time","expectedArrivalTime","date","delay"],axis='columns')
+W = df_test.drop(["stop","theoretical_time","expectedArrivalTime","date","delay","line","date_year","date_month"],axis='columns')
 Z = df_test["delay"]
 
-#EXO 3.1
+
 #on crée un arbre de décision avec une profondeur de 3 et on le fit avec nos données à entrainer
-clf = tree.DecisionTreeClassifier(min_samples_leaf=250,criterion="entropy")
+clf = tree.DecisionTreeClassifier(max_depth=3,criterion="entropy")
 clf = clf.fit(X,Y)
 #on montre le résultat sur nos donées d'entrainement et test apres l'avoir entrainé
 print(clf.score(X,Y))
 print(clf.score(W,Z))
 #enregistre l'abre après entrainement en png
-DT_to_PNG(clf,X.columns,"max_depth_3")
+DT_to_PNG(clf,X.columns,"tree")
 
