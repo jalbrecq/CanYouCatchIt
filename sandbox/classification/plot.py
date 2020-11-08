@@ -22,7 +22,7 @@ for file in files:
 		for row in data:
 			if len(row[3]) >0:
 				delay= float(row[3]) 			
-				if delay>10:				
+				if delay>=10:				
 					grosse_avance+=1
 				elif delay>0:
 					avance +=1
