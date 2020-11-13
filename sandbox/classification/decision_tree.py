@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn import tree
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 #just to add Graphviz to the Path
 import os
 os.environ["PATH"] += os.pathsep + 'D:/Program Files (x86)/Graphviz2.38/bin/'
@@ -34,32 +35,22 @@ def DT_to_PNG(model, feature_names, file_name):
     graph = pydot.graph_from_dot_data(dot_data.getvalue())[0]
     graph.write_png('%s.png' % file_name)
 
+path = "../data/csv/merged.csv"
 
-#prend les chemins avec les fichiers cvs
-dir_name = os.path.dirname(os.path.abspath(__file__))
-csv_train = "/data/train/train_merged.csv"
-csv_test = "/data/test/test_merged.csv"
+data = pd.read_csv(path,1,",")
 
-path_train = dir_name+ csv_train
-path_test = dir_name + csv_test
+X=data[['direction', 'date_month', 'date_weekday', 'date_hour','date_minute','date_seconde','temp','humidity','visibility','wind','rain']]  # Features
+y=data['delay']  # Labels
 
-#extraction des données du fichier csv
-df_train = pd.read_csv(path_train,1,",")
-df_test = pd.read_csv(path_test,1,",")
 
-#on split notre target (delay) et nos critères qui vont servir à la prédiction et on drop les tables inutiles
-X = df_train.drop(["stop","theoretical_time","expectedArrivalTime","date","delay","line","date_year","date_month"],axis='columns')
-Y = df_train["delay"]
-W = df_test.drop(["stop","theoretical_time","expectedArrivalTime","date","delay","line","date_year","date_month"],axis='columns')
-Z = df_test["delay"]
-
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3) # 70% training and 30% test
 
 #on crée un arbre de décision avec une profondeur de 3 et on le fit avec nos données à entrainer
-clf = tree.DecisionTreeClassifier(max_depth=3,criterion="entropy")
-clf = clf.fit(X,Y)
+clf = tree.DecisionTreeClassifier(criterion="entropy",min_samples_leaf=100)
+clf = clf.fit(X_train,y_train)
 #on montre le résultat sur nos donées d'entrainement et test apres l'avoir entrainé
-print(clf.score(X,Y))
-print(clf.score(W,Z))
+print(clf.score(X_train,y_train))
+print(clf.score(X_test,y_test))
 #enregistre l'abre après entrainement en png
 DT_to_PNG(clf,X.columns,"tree")
 
