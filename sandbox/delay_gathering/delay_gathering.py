@@ -43,6 +43,8 @@ def get_stops(lines_id, access_token):
     app_log.info('Send a request to the STIB API to get the list of stops on a given line')
     try:
         response = eval(requests.request("GET", url, headers=headers, data=payload).text)
+        print(response)
+        print('-'*50)
     except requests.exceptions.ConnectionError:
         app_log.exception('Connection Error probably a lost of internet connection')
         return result
@@ -321,29 +323,28 @@ def save_delays(stops_id, database_path, access_token, weather_api_token):
                     except:
                         app_log.exception('Parsing to dict exception: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)')
 
-                csv_file = Path("sandbox/data/csv/delay" + datetime.now().date().isoformat() + '.csv')
-                f = open('sandbox/data/csv/delay' + datetime.now().date().isoformat() + '.csv', 'a+')
+                csv_file = Path("sandbox/data/csv2/delay" + datetime.now().date().isoformat() + '.csv')
+                f = open('sandbox/data/csv2/delay' + datetime.now().date().isoformat() + '.csv', 'a+')
 
                 with f:
                     writer = csv.writer(f)
                     if not csv_file.is_file():
                         # file exists
-                        writer.writerow('transport_type','trip','stop','line','delay','theoretical_time','expectedArrivalTime','date','direction','year','month','day','hour','minute','seconds','temp','humidity','visibility','wind','rain')
-                    writer.writerow((delay['transport_type'], delay['trip'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, delay['date'].seconds, temp, humidity, visibility, wind, rain))
+                        writer.writerow('transport_type','trip','stop','line','delay','theoretical_time','expectedArrivalTime','date','direction','year','month','day','hour','minute','temp','humidity','visibility','wind','rain')
+                    writer.writerow((delay['transport_type'], delay['trip'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain))
 
                 c.execute("INSERT INTO delay (transport_type, trip, stop, line, delay, theoretical_time, expectedArrivalTime, date, direction, year, month, day, hour, minute, temp, humidity, visibility, wind, rain) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (delay['transport_type'], delay['trip'], delay['stop'], delay['line'], delay['delay'], delay['theoretical_time'], delay['expectedArrivalTime'], delay['date'], delay['direction'], delay['date'].year, delay['date'].month, delay['date'].weekday(), delay['date'].hour, delay['date'].minute, temp, humidity, visibility, wind, rain))
 
             sqlite_db.commit()
             c.close()
 
-        print('-'*40, 'waiting 60s', '-'*40)
-        app_log.info('wainting 60s')
-        time.sleep(60)
+        print('-'*40, 'waiting 150s', '-'*40)
+        app_log.info('wainting 150s')
+        time.sleep(150)
 
 # print(get_stops(['16'], access_token))
 # print(get_arrival_time(["0470F"], access_token))
 # print(get_schedule('sandbox/data/mcts.db', '0516', '4', 'GARE DU NORD'))
 # print(compute_delay(['0089', '0022', '0470F', '0471', '0039', '0472', '0473F', '0501', '0015', '0506', '0511', '0057', '0516', '0521', '61', '0526', '0529', '0531'], 'sandbox/data/mcts.db', 'd86ffa37612eff39c64bacb96053c194'))
 # print(save_delays(get_stops_id('sandbox/data/mcts.db'), 'sandbox/data/mcts.db', access_token, weather_api_token))
-print(save_delays(['0089', '6608G'], 'sandbox/data/mcts.db', access_token, weather_api_token))
-
+print(save_delays(['0089', '5501', '5502', '5503', '5504', '5281G', '5507', '5508', '5509', '5510', '5512', '6474F', '5529', '5532', '5515', '5516', '5517', '5518', '5519', '5520F'], 'sandbox/data/mcts.db', access_token, weather_api_token))
