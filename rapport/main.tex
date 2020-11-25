@@ -30,6 +30,35 @@
 \usepackage{caption}
 \usepackage{subcaption}
 
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
 \usepackage[]{biblatex}
 \addbibresource{sample.bib}
 
@@ -67,7 +96,7 @@
 \newpage
 
 \chapter{Introduction}
-Le but de ce rapport est d'expliquer la démarche et la méthodologie qui a guidé l'élaboration des modèles et de l'analyse des données fournie par les \textit{opendata stib-mivb}. Ce rapport est constitué des différentes parties: l'analyse et la préparation des données, l'entraînement des modèles de régression et de classification et l'analyse de leurs résultats.
+Le but de ce rapport est d'expliquer la démarche et la méthodologie qui a guidé l'élaboration des modèles de machine learning et de l'analyse des données fournie par les \textit{opendata stib-mivb}. Ce rapport est constitué des différentes parties: l'analyse et la préparation des données, l'entraînement des modèles de régression et de classification et l'analyse de leurs résultats. Nous nous sommes concentré uniquement sur une ligne de bus mais le système pourrait facilement être étendu au reste du réseau.
 
 L'étape d'analyse et la préparation des données met en lumière les notions de normalisation, la détecteur d'\textit{outliers}, la selection de \textit{features}. La visualisation des données est également une partie importante de l'analyse des données. En suite dans l'étape d'entraînement des modèles passe par un phase de selection des méta-paramètres et d'optimisation des prédictions.
 
@@ -81,31 +110,54 @@ La première étape est de toute évidence la récolte des données. Notre proje
 
 Nous avons dans un premier temps récolté les données pour deux stop (les numéros 0089 et 6608G, voir leur emplacement dans l'annexe \ref{appendix:stop_pos_1}) du premier novembre au douze novembre. Les fichiers csv sont disponibles sur le \textit{repository}\footnote{Disponible \href{https://github.com/jalbrecq/CanYouCatchIt/tree/main/sandbox/data/csv}{ici}} du projet. Dans un second temps, nous avons récolté les données de tout les stops d'une ligne de bus (la ligne 39). La position de tout les stops de la ligne sont visible sur l'annexe \ref{appendix:stop_pos_2}\footnote{Une carte GoogleMyMaps est également disponible \href{https://www.google.com/maps/d/edit?mid=1_qNGPUfuZXrqC3UZXkmDOWuhEHJfYAox&usp=sharing}{ici}}. Les données récoltées durant cette deuxième phase sont disponible sur le \textit{repository} du projet\footnote{Disponible \href{https://github.com/jalbrecq/CanYouCatchIt/tree/main/sandbox/data/csv2}{ici}}.
 
+\section{Premier coup d'œil à la structure des données}
+La commande \lstinline!data.info()! qu'il y a 12798 lignes sans valeur pour la colonne \lstinline!delay!. Pour chacune des \textit{features} un graphique du nombre d'occurrences par valeur a été créé (voir l'annexe \ref{appendix:plots}). On peut voir sur ces graphiques que plusieurs \textit{features} ont toujours la même valeur. On peut également voir que des retards on été enregistré pour d'autres lignes que la numéro 39, il faudra donc supprimer ces dernières.
+
+Le boxplot en annexe \ref{appendix:boxplot} montre la répartition des retards du 19 septembre sur la ligne 39 au stop 0089. On remarque que la majorité des valeurs de délais se situe entre zéro et une minute de retard.
+
 \section{Préparation des données}
+
+Les lignes du dataset pour les quelles la colonne \lstinline!delay! n'avait pas de valeur ont été supprimée. Les lignes dont la valeur de la colonne \lstinline!line! n'était pas égale à 39 ont également été supprimée. Les features ayant toujours la même valeur ont été supprimées.
 
 \subsection{Normalisation}
 Une fois les données recueillies, nous avons vérifié si elle devaient être normalisés ou non. Après une rapide analyse du dataset généré par le script, il nous a semblé évidant qu'une phase de normalisation était indispensable.
 
 \subsection{Suppression des outliers}
 
-
 \begin{appendices}
     \chapter{Position des stops}
-    \begin{figure}
+    \begin{figure}[h]
         \centering
-        \includegraphics[width=0.9\textwidth]{images/stop_pos_1.png}
+        \includegraphics[width=0.7\textwidth]{images/stop_pos_1.png}
         \caption{Position des stops numéro 0089 et 6608G en jaune et noir respectivement.}
         \label{appendix:stop_pos_1}
     \end{figure}
 
-    \begin{figure}
+    \begin{figure}[h]
         \centering
-        \includegraphics[width=0.9\textwidth]{images/stop_pos_2.png}
+        \includegraphics[width=0.7\textwidth]{images/stop_pos_2.png}
         \caption{Position des stops présent sur la ligne 39}
         \label{appendix:stop_pos_2}
     \end{figure}
 
+    \chapter{Première visualisation des données}
+    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.7\textwidth]{images/plots.png}
+        \caption{Plot des features par nombre d'occurrences}
+        \label{appendix:plots}
+    \end{figure}
+
+    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.7\textwidth]{images/boxplot.png}
+        \caption{Boxplot des délais du 19 septembre sur la ligne 39 au stop 0089}
+        \label{appendix:boxplot}
+    \end{figure}
+
 \end{appendices}
+
+\lstlistoflistings
 
 \nocite{*}
 \printbibliography
