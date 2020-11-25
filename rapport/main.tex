@@ -113,16 +113,27 @@ Nous avons dans un premier temps récolté les données pour deux stop (les num�
 \section{Premier coup d'œil à la structure des données}
 La commande \lstinline!data.info()! qu'il y a 12798 lignes sans valeur pour la colonne \lstinline!delay!. Pour chacune des \textit{features} un graphique du nombre d'occurrences par valeur a été créé (voir l'annexe \ref{appendix:plots}). On peut voir sur ces graphiques que plusieurs \textit{features} ont toujours la même valeur. On peut également voir que des retards on été enregistré pour d'autres lignes que la numéro 39, il faudra donc supprimer ces dernières.
 
-Le boxplot en annexe \ref{appendix:boxplot} montre la répartition des retards du 19 septembre sur la ligne 39 au stop 0089. On remarque que la majorité des valeurs de délais se situe entre zéro et une minute de retard.
+Dans le graphique en annexe \ref{appendix:plots} on remarque qu'il y a moins d'occurrences de valeur quatre pour la \textit{features} \lstinline!hour!. Cela est du au fonctionnement de l'API de la STIB. On peut également voir qu'il y a plus de d'occurrences pour les valeurs entre dix et quinze de la \textit{features} \lstinline!hour!, cette différentes est due à l'heure de démarrage et d'arrêt du script de récolte des données.
+
+Le boxplot en annexe \ref{appendix:boxplot} montre la répartition des retards du 19 septembre sur la ligne 39 au stop 0089. On remarque que la majorité des valeurs de délais se situe entre une minute d'avance et une minute de retard.
 
 \section{Préparation des données}
 
-Les lignes du dataset pour les quelles la colonne \lstinline!delay! n'avait pas de valeur ont été supprimée. Les lignes dont la valeur de la colonne \lstinline!line! n'était pas égale à 39 ont également été supprimée. Les features ayant toujours la même valeur ont été supprimées.
+Les lignes du dataset pour les quelles la colonne \lstinline!delay! n'avait pas de valeur ont été supprimée. Les lignes dont la valeur de la colonne \lstinline!line! n'était pas égale à 39 ont également été supprimée. Les features ayant toujours la même valeur ont été supprimées. Les colonnes \lstinline!trip!, \lstinline!theoretical_time!, \lstinline!expectedArrivalTime! et \lstinline!date! ont été supprimées car elles sont pas été jugée utile. Les colonnes \lstinline!theoretical_time!, \lstinline!expectedArrivalTime! et \lstinline!date! ont été supprimées car les valeurs étaient du type \lstinline!string!. La colonne \lstinline!date! a été considérée comme redondante, sa valeur étant déjà stockée dans les colonnes \lstinline!hour!, \lstinline!minute! et \lstinline!day!.
 
-\subsection{Normalisation}
-Une fois les données recueillies, nous avons vérifié si elle devaient être normalisés ou non. Après une rapide analyse du dataset généré par le script, il nous a semblé évidant qu'une phase de normalisation était indispensable.
+\subsection{Stratification des données}
+La stratification des données ne nous a pas semblé utile car le dataset n'est assez grand pour rendre cette dernière nécessaire. Cependant dans un but pédagogique nous avons quand même stratifier la colonne \lstinline!hour!, afin que la répartition des différentes valeurs reste identique dans le dataset ainsi que dans le test-set.
 
-\subsection{Suppression des outliers}
+\section{Visualisation des données}
+\subsection{Création du test-set}
+Cela pourrait paraître étrange de mettre de coté une partie des données à ce moment. Les données n'ont même pas encore été vraiment visualisée et nous devons encore en apprendre plus avant de choisir quel algorithmes utiliser. Cependant si le test-set est créé maintenant c'est pour éviter le \textit{snooping bias}. Le test-set et constituer de vingt pourcent des données du dataset. 
+
+\subsection{Création des visualisations}
+La première visualisation générée (annexe \ref{appendix:delay_per_hour}) est la répartition des délais en fonction de l'heure. On remarque qu'après dix-huit heure on a soit une avance ou un retard de vingt minutes ou une variation de cinq minutes par rapport à l'horaire théorique, sans valeur intermédiaire. On remarque également que la majorité des délais ont une valeur nulle. On peut également voir qu'il une augmentation des délais après quinze heure jusqu'a dix-neuf heure.
+
+Le second graphique (annexe \ref{appendix:mean_delay_per_hour}) indique le délais moyen par heure. On y remarque une augmentation des délais entre six et neuf heure, à quinze heure et ainsi qu'a vingt-et-une heure. Le pick de retard de vingt-et-une heure vient sans doute du couvre feu de vingt-deux heure, les autres pick quand à eux sont à priori du au traffic de Bruxelles.
+
+Sur la dernière infographie (annexe \ref{appendix:mean_temp_per_hour}) on remarque une hausse des températures de midi à seize heure.
 
 \begin{appendices}
     \chapter{Position des stops}
@@ -153,6 +164,27 @@ Une fois les données recueillies, nous avons vérifié si elle devaient être n
         \includegraphics[width=0.7\textwidth]{images/boxplot.png}
         \caption{Boxplot des délais du 19 septembre sur la ligne 39 au stop 0089}
         \label{appendix:boxplot}
+    \end{figure}
+
+    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.7\textwidth]{images/delay_per_hour.png}
+        \caption{Délai par heure pour tout le dataset}
+        \label{appendix:delay_per_hour}
+    \end{figure}
+
+    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.7\textwidth]{images/mean_delay_per_hour.png}
+        \caption{Délai moyen par heure pour tout le dataset}
+        \label{appendix:mean_delay_per_hour}
+    \end{figure}
+
+    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.7\textwidth]{images/mean_temp_per_hour.png}
+        \caption{Température moyenne par heure pour tout le dataset}
+        \label{appendix:mean_temp_per_hour}
     \end{figure}
 
 \end{appendices}
