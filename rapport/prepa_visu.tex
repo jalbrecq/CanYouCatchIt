@@ -6,14 +6,13 @@ La première étape est de toute évidence la récolte des données. Notre proje
 Nous avons dans un premier temps récolté les données pour deux stop (les numéros 0089 et 6608G, voir leur emplacement dans l'annexe \ref{appendix:stop_pos_1}) du premier novembre au douze novembre. Les fichiers csv sont disponibles sur le \textit{repository}\footnote{Disponible \href{https://github.com/jalbrecq/CanYouCatchIt/tree/main/sandbox/data/csv}{ici}} du projet. Dans un second temps, nous avons récolté les données de tout les stops d'une ligne de bus (la ligne 39). La position de tout les stops de la ligne sont visible sur l'annexe \ref{appendix:stop_pos_2}\footnote{Une carte GoogleMyMaps est également disponible \href{https://www.google.com/maps/d/edit?mid=1_qNGPUfuZXrqC3UZXkmDOWuhEHJfYAox&usp=sharing}{ici}}. Les données récoltées durant cette deuxième phase sont disponible sur le \textit{repository} du projet\footnote{Disponible \href{https://github.com/jalbrecq/CanYouCatchIt/tree/main/sandbox/data/csv2}{ici}}.
 
 \section{Premier coup d'œil à la structure des données}
-La commande \lstinline!data.info()! qu'il y a 12798 lignes sans valeur pour la colonne \lstinline!delay!. Pour chacune des \textit{features} un graphique du nombre d'occurrences par valeur a été créé (voir l'annexe \ref{appendix:plots}). On peut voir sur ces graphiques que plusieurs \textit{features} ont toujours la même valeur. On peut également voir que des retards on été enregistré pour d'autres lignes que la numéro 39, il faudra donc supprimer ces dernières.
+La commande \lstinline!data.info()! indique qu'il y a 12798 lignes sans valeur pour la colonne \lstinline!delay!. Pour chacune des \textit{features} un graphique du nombre d'occurrences par valeur a été créé (voir l'annexe \ref{appendix:plots}). On peut voir sur ces graphiques que plusieurs \textit{features} ont toujours la même valeur. On peut également voir que des retards on été enregistré pour d'autres lignes que la numéro 39, il faudra donc supprimer ces dernières.
 
 Dans le graphique en annexe \ref{appendix:plots} on remarque qu'il y a moins d'occurrences de valeur quatre pour la \textit{features} \lstinline!hour!. Cela est du au fonctionnement de l'API de la STIB. On peut également voir qu'il y a plus de d'occurrences pour les valeurs entre dix et quinze de la \textit{features} \lstinline!hour!, cette différentes est due à l'heure de démarrage et d'arrêt du script de récolte des données.
 
 Le boxplot en annexe \ref{appendix:boxplot} montre la répartition des retards du 19 septembre sur la ligne 39 au stop 0089. On remarque que la majorité des valeurs de délais se situe entre une minute d'avance et une minute de retard.
 
 \section{Préparation des données}
-
 Les lignes du dataset pour les quelles la colonne \lstinline!delay! n'avait pas de valeur ont été supprimée. Les lignes dont la valeur de la colonne \lstinline!line! n'était pas égale à 39 ont également été supprimée. Les features ayant toujours la même valeur ont été supprimées. Les colonnes \lstinline!trip!, \lstinline!theoretical_time!, \lstinline!expectedArrivalTime! et \lstinline!date! ont été supprimées car elles sont pas été jugée utile. Les colonnes \lstinline!theoretical_time!, \lstinline!expectedArrivalTime! et \lstinline!date! ont été supprimées car les valeurs étaient du type \lstinline!string!. La colonne \lstinline!date! a été considérée comme redondante, sa valeur étant déjà stockée dans les colonnes \lstinline!hour!, \lstinline!minute! et \lstinline!day!.
 
 \subsection{Stratification des données}
@@ -48,13 +47,18 @@ day          -0.079071
 Name: delay, dtype: float64
 \end{lstlisting}
 
-La \textit{heatmap} (disponible en annexe \ref{appendix:corr_mat} et générée avec le code \ref{mat_csc}) nous permet de confirmer que la \textit{feature} \lstinline!delay! n'est pas linéairement corrélée avec les autres \textit{features}. Elle nous fournis cependant des informations supplémentaires comme le fait que la \textit{feature} \lstinline!temp! est linéairement corrélée avec la \textit{feature} \lstinline!wind!, ainsi qu'inversément linéairement corrélée avec la \textit{feature} \lstinline!humidity!. Cependant ces corrélations reste faibles, comme on peut le voir sur la figure \ref{appendix:scatter_matrix}. On voit bien que globalement quand la valeur de la \textit{feature} \lstinline!humidity! chute quand celle de la \textit{feature} \lstinline!temp! augmente mais on reste cependant loin d'une belle ligne droite.
+La \textit{heatmap} (disponible en annexe \ref{appendix:corr_mat}) nous permet de confirmer que la \textit{feature} \lstinline!delay! n'est pas linéairement corrélée avec les autres \textit{features}. Elle nous fournis cependant des informations supplémentaires comme le fait que la \textit{feature} \lstinline!temp! est linéairement corrélée avec la \textit{feature} \lstinline!wind!, ainsi qu'inversément linéairement corrélée avec la \textit{feature} \lstinline!humidity!. Cependant ces corrélations reste faibles, comme on peut le voir sur la figure \ref{appendix:scatter_matrix}. On voit bien que globalement quand la valeur de la \textit{feature} \lstinline!humidity! chute quand celle de la \textit{feature} \lstinline!temp! augmente mais on reste cependant loin d'une belle ligne droite.
 
-\begin{lstlisting}[language=Python, caption=Matrice des coefficients standard de corrélation., label=mat_csc]
-corr_matrix = data.corr()
-plt.figure(figsize= (10,10), dpi=100)
-sns.heatmap(corr_matrix)
-\end{lstlisting}
+\subsection{Combinaison de \textit{features}}
+La \textit{feature} \lstinline!hour_minute! est une nouvelle \textit{feature} que nous avons créé en combinant les \textit{features} \lstinline!hour! et \lstinline!minute!. Ce regroupement des \textit{features} est fait dans un bute pédagogique car de manière générale on a plutôt tendance à séparer les \textit{features}. La séparation des \textit{features} est une bonne façon de les rendre plus utilisable par l'algorithmes de machine learning car la plus part du temps les datasets possède des colonnes du type \lstinline!string! qui viole le principe de \textit{tidy data}. La division des \textit{features} permet améliorer les performances du modèle en découvrant des informations potentielles. Ce qui a déjà été fait en divisant la \textit{feature} \lstinline!date! en les \textit{features} \lstinline!year!, \lstinline!month!, \lstinline!day!, \lstinline!hour! et \lstinline!minute!.
 
-\section{Combinaison de \textit{features}}
-La \textit{feature} \lstinline!hour_minute! est une nouvelle \textit{feature} que nous avons créé en combinant les \textit{features} \lstinline!hour! et \lstinline!minute!.
+\subsubsection{Visualisation de la nouvelle \textit{feature}}
+Le graphique en annexe \ref{appendix:delay_per_hour_and_minute} nous montre la répartition des délais en fonction de l'heure de la journée. On remarque que le graphique garde évidement sa forme de fourche caractéristique.
+
+En réaffichant les coefficient standard de corrélation en prenant en compte cette nouvelle \textit{feature}, on remarque qu'elle est encore moins linéairement corrélée avec la \textit{feature} \lstinline!delay! que ne le sont les \textit{features} \lstinline!hour! et \lstinline!minute!.
+
+\section{Les \textit{features} de type \lstinline!string!}
+La plus part des algorithmes de machine learning préfère travailler avec des nombres plutôt qu'avec du texte, c'est pourquoi nous convertissons la \textit{feature} \lstinline!stop! en différente catégorie représentée par un nombre.
+
+\section{Pipeline}
+Un pipeline a été créé pour faciliter l'exécution des étapes de transformation des données. Le pipeline effectue les opérations suivantes, premièrement amputer les lignes ayant au moins une valeur nulle dans l'une des colonnes. En suite vient l'étape d'ajout de la \textit{feature} \lstinline!hour_and_minute! qui peut être déactivée à la volée à l'aide d'un paramètre. La dernière étape est la création des catégories des stops comme vu dans la section précédente.

@@ -1,0 +1,18 @@
+\chapter{Modèles et résultats}
+Ce chapitre est divisés en deux partie la première concerne la partie de l'équipe "regression" (constituée de Jean A. et de Cyprien L.) et la seconde concerne la partie de l'équipe "classification" (constituée d'Antoine P. et de Jessica D.). Chacune des équipes est partie sur un vision différente du problème, comme leur nom l'indique le premiere équipe a vu le problème comme un problème de régression tandis que la second comme un problème de classification.
+
+\section[Partie 1 - Regression]{Partie 1 - Regression \footnote{Le code concernant cette section est disponible \href{https://github.com/jalbrecq/CanYouCatchIt/blob/main/machine_learning/notebook/CanYouCatchIt_3of3.ipynb}{ici}}}
+
+Différent modèles ont été entraînés afin de sélectionner le meilleur d'entre eux. Le premier a avoir été testé est le modèle de regression linéaire, les prédictions obtenues sont disponible dans le tableau en annexe \ref{appendix:linearReg}. Le modèle fonctionne mais n'est pas précis du tout. Pour nous rendre compte à quel point le modèle se trompe nous calculons la  \textit{root-mean-square error} (RMSE), cette dernière est égale à 5.2243. C'est mieux que rien mais étant donné que les délais varient principalement entre 20min et -25min, une erreur moyenne de 5min n'est pas acceptable. Cela signifie que le modèle \textit{underfit} les donnée d'entraînement ce qui indique que nos données ne sont pas assez pertinentes ou que le modèle n'est pas assez puissant. Lors que l'on utilise donc un modèle d'apprentissage par arbre de décision et que l'on calcule la RMSE on obtient une valeur nulle. Ce qui signifie que le modèle \textit{overfit} les données d'entraînement.
+
+\subsection{Cross-validation}
+Afin de mieux évaluer les modèles testés, nous avons utilisé une \textit{10-fold cross-validation}. En utilisant la cross validation sur le modèle linéaire nous obtenons toujours une erreur moyenne de 5.22 pour les dix \textit{folds}. Le modèle d'apprentissage par arbre de décision obtient lui une valeur de 6.13, pire que le modèle de régression linéaire donc. Ce qui indique que l'arbre de décision \textit{overfit} tellement qu'il fonctionne moins bien que le modèle de régression linéaire. Apres avoir entraîné un modèle de type \textit{Random Forest} et du type \textit{Support Vector Regression} sur 10 \textit{folds} nous obtenons respectivement une erreur moyenne de 4.89 et de 5.27. Pour la suite, nous avons choisi le modèle \textit{Random Forest}.
+
+\subsection{\textit{Grid search}}
+Nous avons donné un liste de valeur pour chaque métaparamètres (\lstinline!n_estimators! , \lstinline!max_features! et \lstinline!bootstrap!) à tester. \textit{Grid search} nous indique que la meilleur combinaison de valeur est \lstinline!{'max_features': 8, 'n_estimators': 30}! avec une erreur moyenne de 4.758. Ce résultat peut encore être amélioré car la valeur des métaparamètres \lstinline!n_estimators! et \lstinline!max_features! sélectionnées ont tous deux la valeur maximale que nous avions donnée. Nous changeons donc la liste des valeurs de \lstinline!n_estimators! et \lstinline!max_features! pour des valeurs plus grandes que 30 et 8 respectivement. La meilleur combinaison était \lstinline!{'max_features': 8, 'n_estimators': 70}! avec une erreur moyenne de 4.726.
+
+\subsection{\textit{Randomized Search}}
+Nous avons test une \textit{Randomized Search} avec des valeurs entre 1 et 200 pour \lstinline!max_features! et entre 1 et 8 \lstinline!n_estimators!. La meilleur combinaison de métaparamètres est \lstinline!{'max_features': 7, 'n_estimators': 180}! avec une erreur moyenne de 4.719.
+
+\subsection{Intervale de confiance}
+L'intervale de confiance (95\%) pour la RMSE est entre 3,84 et 4,63min
