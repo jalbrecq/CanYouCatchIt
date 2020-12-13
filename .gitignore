@@ -159,3 +159,4 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+machine_learning/models/my_model.pkl
