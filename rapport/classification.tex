@@ -1,6 +1,6 @@
 \section{Partie 2 - Classification}
 \subsection{Adapter les données pour la classification}
-premièrement nous avons adapter les donnée pour la classification car celles que nous avons collectées étaient faite pour la régression. Par exemple la \textit{feature} \lstinline!delay! a du être modifiée, pour ce faire nous avons créé un script Python. Ce script crée deux fichier l'un avec les \lstinline!delay! divisé en quatre catégories et le second ou ils sont divisés en seulement trois catégories. Dans le premier cas les catégories sont les suivantes \textit{big late, late, on time, early et big early} et le deuxième cas les trois catégories sont \textit{late, on time et early}. Le script supprime également les valeurs nulles. Pour choisir le meilleurs nombre de classe de \lstinline!delay!, nous avons affiché le nombre d'occurrence de chacune des classes (voir annexe \ref{appendix:3} et annexe \ref{appendix:5} ). On voit qu'il y a moins de \lstinline!delay! dans les classes \textit{big late et big early} et la division des classes est meilleure dans le deuxième cas.
+premièrement nous avons adapter les donnée pour la classification car celles que nous avons collectées étaient faite pour la régression. Par exemple la \textit{feature} \lstinline!delay! a du être modifiée, pour ce faire nous avons créé un script Python. Ce script crée deux fichiers l'un avec les \lstinline!delay! divisé en cinq catégories et le second ou ils sont divisés en seulement trois catégories. Dans le premier cas les catégories sont les suivantes \textit{big late, late, on time, early et big early} et le deuxième cas les trois catégories sont \textit{late, on time et early}. Le script supprime également les valeurs nulles. Pour choisir le meilleurs nombre de classe de \lstinline!delay!, nous avons affiché le nombre d'occurrence de chacune des classes (voir annexe \ref{appendix:3} et annexe \ref{appendix:5} ). On voit qu'il y a moins de \lstinline!delay! dans les classes \textit{big late et big early} et la division des classes est meilleure dans le deuxième cas.
 
 %\includegraphics[width=8cm]{images/5.PNG}
 %\includegraphics[width=8cm]{images/3.png}
@@ -12,17 +12,17 @@ Maintenant ce choix fait, nous pouvons aller plus loin, comme l'équipe de régr
 
 %\includegraphics[width=5cm]{images/all_same.png}
 
-Nous pouvons voir que \lstinline!transport_type, year, month, direction! ont toujours la même valeur pour chaque ligne. Les attributes de type string ont également été supprimés
+Nous pouvons voir que \lstinline!transport_type, year, month, direction! ont toujours la même valeur pour chaque ligne. Les attributes de type string inutiles ont également été supprimés
 
 %\includegraphics[height=3cm]{images/data_cleaned.PNG}
 
 \subsubsection{Transformation des attributs catégoriels}
-Nous transformons les attributes \lstinline!string! en catégorie afin d'aider l'algorithme de machine learning.
+Nous transformons les attributes \lstinline!string! utiles en catégorie afin d'aider l'algorithme de machine learning.
 %\includegraphics[width=2.5cm]{images/stop_cat.PNG}
 %\includegraphics[width=2.5cm]{images/stop_num.PNG}
 
 \subsubsection{Extra feature}
-Nous avons également ajouté une colonne supplémentaires qui est la combinaison des colonnes \lstinline!hour! et \lstinline!minute!
+Nous avons également ajouté une colonne supplémentaire qui est la combinaison des colonnes \lstinline!hour! et \lstinline!minute!
 
 %\includegraphics[width=1\textwidth]{images/hour_and_minute.PNG}
 
@@ -59,9 +59,9 @@ Nous avons testé une combinaison de 72 hyperparameters \newline
 Le grid search nous indique que la meilleur combinaison est bootstrap = False, max\_features= 8, min\_samples\_leaf =100, n\_estimators =100. \newline
 Ce qui nous donne un score d'entraînement de 56.3\% et un score test de 54.1\%.
 
-Si nous regardons de plus près les scores, nous pouvons voir que c'est toujours avec \lstinline!min_sample_leaf = 100! que nous avons les meilleurs résultats donc nous avons testé des valeurs moins grande.
+Si nous regardons de plus près les scores, nous pouvons voir que c'est toujours avec \lstinline!min_sample_leaf = 100! que nous avons les meilleurs résultats donc nous avons testé des valeurs moins grandes.
 
-64 combinaisons d'hyperparameters supplémentaires on donc été testées.\newline
+64 combinaisons d'hyperparameters supplémentaires ont donc été testées.\newline
 bootstrap =[False,True], max\_features= [2, 3, 4,8], criterion = ["entropy","gini"], min\_samples\_leaf =  [10,30,50,100] \newline
 Selon le grid search les meilleurs paramètres sont: bootstrap = False, criterion = 'entropy', max\_features = 8, min\_samples\_leaf = 10 \newline
 Avec un score d'entraînement de 71.5\% et un score test de 58.3\%.
